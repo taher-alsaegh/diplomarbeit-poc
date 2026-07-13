@@ -1,0 +1,23 @@
+apiVersion: v2
+name: rancher-project-authz
+description: >-
+  Declarative Rancher authorization. Renders Rancher Projects, project
+  namespaces, ProjectRoleTemplateBindings (PRTB), ClusterRoleTemplateBindings
+  (CRTB), GlobalRoleBindings (GRB) and matching ArgoCD AppProjects from a single
+  values.yaml. Role bindings are driven by IdP groups (Keycloak OIDC / Active
+  Directory) instead of individual users.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - rancher
+  - keycloak
+  - oidc
+  - rbac
+  - authorization
+  - argocd
+  - multi-tenancy
+maintainers:
+  - name: Taher Al Saegh
+sources:
+  - https://example.internal/gitops-projects-7301

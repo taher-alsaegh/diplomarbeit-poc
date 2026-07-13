@@ -1,0 +1,18 @@
+{{- if eq (include "authz.renderWorkload" .) "true" }}
+{{- $clusterId := required "clusterId is required" .Values.clusterId -}}
+{{- range $p := .Values.projects }}
+{{- range $ns := ($p.namespaces | default list) }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ $ns }}
+  annotations:
+    # joins this namespace to the Rancher project (clusterId:projectName)
+    field.cattle.io/projectId: {{ printf "%s:%s" $clusterId $p.name | quote }}
+  labels:
+    field.cattle.io/projectId: {{ $p.name }}
+    {{- include "authz.labels" $ | nindent 4 }}
+{{- end }}
+{{- end }}
+{{- end }}

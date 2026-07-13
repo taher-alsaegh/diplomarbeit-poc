@@ -1,0 +1,138 @@
+# =============================================================================
+# rancher-project-authz — values.yaml
+#
+# One file describes the complete authorization layout for a Rancher cluster:
+# projects, their namespaces, and which IdP groups get which roles at project,
+# cluster and global level. Matching ArgoCD AppProjects are generated too.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Which set of resources this release renders.
+#
+# Rancher management CRDs (Project, PRTB, CRTB, GRB) live in the Rancher
+# management ("local") cluster. The actual project namespaces live in the
+# DOWNSTREAM cluster. A single Helm release only targets one kube-context, so
+# for a real multi-cluster setup you install this chart twice:
+#
+#   target=management  -> against the Rancher local cluster
+#   target=workload    -> against the downstream cluster
+#
+# For a single-cluster demo (everything on the Rancher local cluster) use "all".
+#
+#   management -> Project, PRTB, CRTB, GRB
+#   workload   -> Namespaces + ArgoCD AppProjects
+#   all        -> everything
+# -----------------------------------------------------------------------------
+target: all
+
+# -----------------------------------------------------------------------------
+# Cluster identity (from Rancher: Cluster Management -> cluster -> ID, e.g. c-xxxxx)
+# clusterId is used as the namespace for Project/PRTB/CRTB and in projectName.
+# -----------------------------------------------------------------------------
+clusterId: c-kg5d6
+clusterName: c-kg5d6
+
+# -----------------------------------------------------------------------------
+# How group / user names are turned into Rancher principals.
+# Depends on the configured auth provider:
+#   Keycloak (OIDC):    keycloakoidc_group://   keycloakoidc_user://
+#   Active Directory:   activedirectory_group://  activedirectory_user://
+#   Generic OIDC:       oidc_group://             oidc_user://
+# -----------------------------------------------------------------------------
+groupPrincipalPrefix: "keycloakoidc_group://"
+userPrincipalPrefix: "keycloakoidc_user://"
+
+# -----------------------------------------------------------------------------
+# ArgoCD integration. When enabled, an AppProject is generated per Rancher
+# project (unless a project sets argocd.enabled: false), scoped to that
+# project's namespaces. The project's group bindings are mirrored into the
+# AppProject as project-scoped roles, so the same Keycloak group that owns a
+# Rancher project also gets the mapped rights on the matching AppProject.
+# -----------------------------------------------------------------------------
+argocd:
+  enabled: true
+  namespace: argocd
+  server: https://kubernetes.default.svc
+
+  # IMPORTANT: ArgoCD matches the RAW group name from the OIDC `groups` claim
+  # (e.g. "dev-team"), NOT the Rancher principal prefix. Leave empty unless your
+  # tokens carry full group paths (then set e.g. "/").
+  groupClaimPrefix: ""
+
+  # Map each Rancher project role to the ArgoCD actions its group gets on the
+  # matching AppProject. Each entry is "<resource>, <action>". Objects are
+  # scoped to the AppProject automatically (<appproject>/*).
+  roleActions:
+    read-only:
+      - "applications, get"
+      - "logs, get"
+    project-member:
+      - "applications, get"
+      - "applications, sync"
+      - "applications, action/*"
+      - "logs, get"
+    project-owner:
+      - "applications, get"
+      - "applications, sync"
+      - "applications, action/*"
+      - "applications, create"
+      - "applications, update"
+      - "applications, override"
+      - "applications, delete"
+      - "logs, get"
+      - "exec, create"
+
+# -----------------------------------------------------------------------------
+# Cluster-wide bindings (CRTB) — groups/users that get a cluster-level role
+# across the whole cluster (all projects, nodes, cluster resources).
+# role: cluster-owner | cluster-member | (any custom ClusterRoleTemplate)
+# -----------------------------------------------------------------------------
+clusterBindings:
+  - group: k8s_admin
+    role: cluster-owner
+
+# -----------------------------------------------------------------------------
+# Global bindings (GRB) — real Rancher global roles (e.g. full admin).
+# Use sparingly. role: admin | user | restricted-admin | (custom GlobalRole)
+# -----------------------------------------------------------------------------
+globalBindings: []
+  # - group: rancher-superadmins
+  #   role: admin
+
+# -----------------------------------------------------------------------------
+# Convention over configuration: derive three AD groups per project from a base
+# name, each mapped to a Rancher project role. This is the model used in the
+# thesis — one group per access tier, no overlap, no precedence conflicts.
+#
+#   <groupBase>_owner   -> project-owner   (full control)
+#   <groupBase>_member  -> project-member  (see + sync/deploy)
+#   <groupBase>_viewer  -> read-only       (view only)
+#
+# The same group governs both Rancher (via PRTB) and ArgoCD (via AppProject role).
+# -----------------------------------------------------------------------------
+autoGroups:
+  enabled: true
+  groupPrefix: "k8s_project_"   # -> k8s_project_<base>_<tier>
+  separator: "_"
+  roles:
+    owner: project-owner
+    editor: project-member
+    viewer: read-only
+
+# -----------------------------------------------------------------------------
+# Projects. With autoGroups enabled you only declare the project and its base
+# name; the three group bindings are generated automatically. You can still add
+# extra one-off bindings under `bindings:` if ever needed.
+#   name        metadata.name of the Rancher Project (convention: p-<something>)
+#   displayName human-readable name shown in the Rancher UI
+#   groupBase   base for the AD group names (defaults to name); e.g. "devtest"
+#               -> devtest_owner / devtest_member / devtest_viewer
+#   namespaces  namespaces that join this project
+#   argocd.enabled  override the global argocd toggle for this project
+# -----------------------------------------------------------------------------
+projects:
+  - name: p-test
+    displayName: "Test"
+    groupBase: test           # -> k8s_project_test_owner / _editor / _viewer
+    namespaces:
+      - test-app

@@ -1,0 +1,20 @@
+{{- if eq (include "authz.renderManagement" .) "true" }}
+{{- $gp := .Values.groupPrincipalPrefix -}}
+{{- $up := .Values.userPrincipalPrefix -}}
+{{- range $b := (.Values.globalBindings | default list) }}
+{{- $subject := $b.group | default $b.user }}
+---
+apiVersion: management.cattle.io/v3
+kind: GlobalRoleBinding
+metadata:
+  name: {{ include "authz.bindingName" (printf "grb-%s-%s" $subject $b.role) }}
+  labels:
+    {{- include "authz.labels" $ | nindent 4 }}
+globalRoleName: {{ $b.role }}
+{{- if $b.group }}
+groupPrincipalName: {{ printf "%s%s" $gp $b.group | quote }}
+{{- else if $b.user }}
+userPrincipalName: {{ printf "%s%s" $up $b.user | quote }}
+{{- end }}
+{{- end }}
+{{- end }}

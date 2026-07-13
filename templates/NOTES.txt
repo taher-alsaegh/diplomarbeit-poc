@@ -1,0 +1,27 @@
+rancher-project-authz  (release: {{ .Release.Name }}, target: {{ .Values.target }})
+
+Cluster:   {{ .Values.clusterId }}
+Projects:  {{ len .Values.projects }}
+
+{{ if eq (include "authz.renderManagement" .) "true" -}}
+Rendered MANAGEMENT objects (apply against the Rancher local cluster):
+  - Projects, ProjectRoleTemplateBindings, ClusterRoleTemplateBindings, GlobalRoleBindings
+{{ end -}}
+{{ if eq (include "authz.renderWorkload" .) "true" -}}
+Rendered WORKLOAD objects (apply against the downstream cluster):
+  - Namespaces (joined to their project){{ if .Values.argocd.enabled }}, ArgoCD AppProjects{{ end }}
+{{ end }}
+Group principals use prefix: {{ .Values.groupPrincipalPrefix }}
+
+Verify:
+  # management cluster
+  kubectl get projects.management.cattle.io -n {{ .Values.clusterId }}
+  kubectl get projectroletemplatebindings.management.cattle.io -n {{ .Values.clusterId }}
+  kubectl get clusterroletemplatebindings.management.cattle.io -n {{ .Values.clusterId }}
+
+  # downstream cluster
+  kubectl get ns -l field.cattle.io/projectId
+
+Remember: management CRDs live in the Rancher local cluster, namespaces in the
+downstream cluster. For multi-cluster, install twice (target=management /
+target=workload) with the matching kube-context.

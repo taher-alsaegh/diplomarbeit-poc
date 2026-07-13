@@ -1,0 +1,55 @@
+{{- if eq (include "authz.renderWorkload" .) "true" }}
+{{- if .Values.argocd.enabled }}
+{{- $ns := .Values.argocd.namespace -}}
+{{- $server := .Values.argocd.server -}}
+{{- $groupPrefix := .Values.argocd.groupClaimPrefix | default "" -}}
+{{- $roleActions := .Values.argocd.roleActions | default dict -}}
+{{- range $p := .Values.projects }}
+{{- $argoEnabled := true -}}
+{{- if hasKey $p "argocd" }}{{- $argoEnabled = $p.argocd.enabled -}}{{- end }}
+{{- if $argoEnabled }}
+{{- $bindings := include "authz.effectiveBindings" (dict "project" $p "values" $.Values) | mustFromJson }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: {{ $p.name }}
+  namespace: {{ $ns }}
+  labels:
+    {{- include "authz.labels" $ | nindent 4 }}
+spec:
+  description: {{ printf "Managed AppProject for Rancher project %s" ($p.displayName | default $p.name) | quote }}
+  sourceRepos:
+    - '*'
+  destinations:
+{{- range $target := ($p.namespaces | default list) }}
+    - namespace: {{ $target }}
+      server: {{ $server }}
+{{- end }}
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  # Project-scoped roles mirrored from the derived project bindings.
+  # Only GROUP bindings are mapped (ArgoCD project roles bind OIDC groups).
+  roles:
+{{- range $b := $bindings }}
+{{- if $b.group }}
+{{- $roleName := printf "%s-%s" $b.group $b.role | lower | replace "_" "-" | replace " " "-" | trunc 63 | trimSuffix "-" }}
+{{- $actions := index $roleActions $b.role | default (index $roleActions "read-only") }}
+    - name: {{ $roleName }}
+      description: {{ printf "%s -> %s on %s (mirrors Rancher role %s)" $b.group $b.role $p.name $b.role | quote }}
+      groups:
+        - {{ printf "%s%s" $groupPrefix $b.group | quote }}
+      policies:
+{{- range $act := $actions }}
+        - {{ printf "p, proj:%s:%s, %s, %s/*, allow" $p.name $roleName $act $p.name | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
