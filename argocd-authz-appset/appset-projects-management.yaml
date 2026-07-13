@@ -19,7 +19,6 @@ spec:
     - list:
         elements:
           - project: p-test
-          - project: p-staging
           # add new projects here -> a new Application is generated automatically
   template:
     metadata:

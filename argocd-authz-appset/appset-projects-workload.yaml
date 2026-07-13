@@ -13,7 +13,6 @@ spec:
     - list:
         elements:
           - project: p-test
-          - project: p-staging
   template:
     metadata:
       name: 'authz-workload-{{.project}}'
