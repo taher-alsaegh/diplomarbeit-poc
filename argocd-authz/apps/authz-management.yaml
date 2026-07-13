@@ -1,0 +1,35 @@
+# -----------------------------------------------------------------------------
+# authz-management: Rancher Projects, PRTB, CRTB, GRB.
+# Deploys to the Rancher-local (management) cluster.
+#
+# The destination.server MUST match the server URL of the registered
+# management cluster (see cluster-secret-rancher-local.yaml -> stringData.server).
+# -----------------------------------------------------------------------------
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: authz-management
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: REPO_URL
+    targetRevision: TARGET_REVISION
+    path: rancher-project-authz          # the Helm chart directory in the repo
+    helm:
+      parameters:
+        - name: target
+          value: management
+  destination:
+    # must equal the registered management cluster's server URL
+    server: https://host.docker.internal:6443
+    namespace: c-kg5d6                    # not really used (cluster-scoped CRDs), but required
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
