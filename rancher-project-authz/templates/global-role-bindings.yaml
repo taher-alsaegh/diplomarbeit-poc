@@ -1,6 +1,7 @@
 {{- $rcb := .Values.renderClusterBindings }}
 {{- if kindIs "string" $rcb }}{{- $rcb = (eq $rcb "true") }}{{- end }}
-{{- if and (eq (include "authz.renderManagement" .) "true") (default true $rcb) }}
+{{- if kindIs "invalid" $rcb }}{{- $rcb = true }}{{- end }}
+{{- if and (eq (include "authz.renderManagement" .) "true") $rcb }}
 {{- $gp := .Values.groupPrincipalPrefix -}}
 {{- $up := .Values.userPrincipalPrefix -}}
 {{- range $b := (.Values.globalBindings | default list) }}
