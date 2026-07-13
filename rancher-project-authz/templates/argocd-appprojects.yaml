@@ -4,7 +4,7 @@
 {{- $server := .Values.argocd.server -}}
 {{- $groupPrefix := .Values.argocd.groupClaimPrefix | default "" -}}
 {{- $roleActions := .Values.argocd.roleActions | default dict -}}
-{{- range $p := .Values.projects }}
+{{- range $p := (include "authz.selectedProjects" . | mustFromJson) }}
 {{- $argoEnabled := true -}}
 {{- if hasKey $p "argocd" }}{{- $argoEnabled = $p.argocd.enabled -}}{{- end }}
 {{- if $argoEnabled }}

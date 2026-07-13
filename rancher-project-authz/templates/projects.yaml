@@ -1,7 +1,7 @@
 {{- if eq (include "authz.renderManagement" .) "true" }}
 {{- $clusterId := required "clusterId is required" .Values.clusterId -}}
 {{- $clusterName := default .Values.clusterId .Values.clusterName -}}
-{{- range $p := .Values.projects }}
+{{- range $p := (include "authz.selectedProjects" . | mustFromJson) }}
 ---
 apiVersion: management.cattle.io/v3
 kind: Project

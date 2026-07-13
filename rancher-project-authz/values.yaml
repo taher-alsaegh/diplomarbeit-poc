@@ -25,6 +25,14 @@
 # -----------------------------------------------------------------------------
 target: all
 
+# Optional: render only ONE project by name (used by the ArgoCD ApplicationSet,
+# one Application per project). Empty = all projects.
+onlyProject: ""
+
+# Render cluster-wide bindings (CRTB/GRB)? Set false in per-project ArgoCD apps
+# so only the dedicated authz-cluster app manages them (avoids duplicates).
+renderClusterBindings: true
+
 # -----------------------------------------------------------------------------
 # Cluster identity (from Rancher: Cluster Management -> cluster -> ID, e.g. c-xxxxx)
 # clusterId is used as the namespace for Project/PRTB/CRTB and in projectName.

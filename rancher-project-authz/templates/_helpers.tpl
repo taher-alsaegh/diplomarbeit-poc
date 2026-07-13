@@ -70,6 +70,22 @@ Input: dict { project, values }.
 {{- end -}}
 
 {{/*
+Return the list of projects to render, honouring the optional `onlyProject`
+value. When onlyProject is set, only the project whose name matches is kept.
+Returns a JSON array; parse with `mustFromJson`.
+*/}}
+{{- define "authz.selectedProjects" -}}
+{{- $only := .Values.onlyProject | default "" -}}
+{{- $result := list -}}
+{{- range $p := (.Values.projects | default list) -}}
+{{- if or (eq $only "") (eq $only $p.name) -}}
+{{- $result = append $result $p -}}
+{{- end -}}
+{{- end -}}
+{{- $result | toJson -}}
+{{- end -}}
+
+{{/*
 Booleans for the target switch.
 */}}
 {{- define "authz.renderManagement" -}}

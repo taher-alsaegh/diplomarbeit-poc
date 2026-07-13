@@ -1,6 +1,6 @@
 {{- if eq (include "authz.renderWorkload" .) "true" }}
 {{- $clusterId := required "clusterId is required" .Values.clusterId -}}
-{{- range $p := .Values.projects }}
+{{- range $p := (include "authz.selectedProjects" . | mustFromJson) }}
 {{- range $ns := ($p.namespaces | default list) }}
 ---
 apiVersion: v1

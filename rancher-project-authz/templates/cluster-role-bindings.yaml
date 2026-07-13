@@ -1,4 +1,4 @@
-{{- if eq (include "authz.renderManagement" .) "true" }}
+{{- if and (eq (include "authz.renderManagement" .) "true") (ne (toString (.Values.renderClusterBindings | default true)) "false") }}
 {{- $clusterId := required "clusterId is required" .Values.clusterId -}}
 {{- $clusterName := default .Values.clusterId .Values.clusterName -}}
 {{- $gp := .Values.groupPrincipalPrefix -}}

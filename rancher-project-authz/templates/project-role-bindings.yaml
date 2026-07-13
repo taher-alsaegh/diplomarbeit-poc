@@ -2,7 +2,7 @@
 {{- $clusterId := required "clusterId is required" .Values.clusterId -}}
 {{- $gp := .Values.groupPrincipalPrefix -}}
 {{- $up := .Values.userPrincipalPrefix -}}
-{{- range $p := .Values.projects }}
+{{- range $p := (include "authz.selectedProjects" . | mustFromJson) }}
 {{- $bindings := include "authz.effectiveBindings" (dict "project" $p "values" $.Values) | mustFromJson }}
 {{- range $b := $bindings }}
 {{- $subject := $b.group | default $b.user }}
