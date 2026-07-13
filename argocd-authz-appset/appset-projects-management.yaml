@@ -1,0 +1,51 @@
+# =============================================================================
+# ApplicationSet: one ArgoCD Application per project, for the MANAGEMENT objects
+# (Project + its PRTBs). Add a project to the list and a new App appears.
+#
+# Each generated App renders the chart with onlyProject=<name>, so it contains
+# exactly that project's resources -> clean, per-project grouping in the ArgoCD UI.
+#
+# Cluster-wide bindings (CRTB/GRB) are NOT per-project; they live in the separate
+# authz-cluster Application (see apps/authz-cluster.yaml).
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: authz-projects-management
+  namespace: argocd
+spec:
+  goTemplate: true
+  generators:
+    - list:
+        elements:
+          - project: p-test
+          - project: p-staging
+          # add new projects here -> a new Application is generated automatically
+  template:
+    metadata:
+      name: 'authz-mgmt-{{.project}}'
+      labels:
+        authz.project: '{{.project}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/taher-alsaegh/diplomarbeit-poc.git
+        targetRevision: main
+        path: rancher-project-authz
+        helm:
+          parameters:
+            - name: target
+              value: management
+            - name: onlyProject
+              value: '{{.project}}'
+            - name: renderClusterBindings
+              value: "false" 
+      destination:
+        server: https://host.docker.internal/k8s/clusters/local
+        namespace: c-kg5d6
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - ServerSideApply=true

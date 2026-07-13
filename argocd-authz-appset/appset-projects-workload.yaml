@@ -1,0 +1,42 @@
+# =============================================================================
+# ApplicationSet: one Application per project for the WORKLOAD objects
+# (namespaces + ArgoCD AppProject). Deploys to the downstream cluster.
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: authz-projects-workload
+  namespace: argocd
+spec:
+  goTemplate: true
+  generators:
+    - list:
+        elements:
+          - project: p-test
+          - project: p-staging
+  template:
+    metadata:
+      name: 'authz-workload-{{.project}}'
+      labels:
+        authz.project: '{{.project}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/taher-alsaegh/diplomarbeit-poc.git
+        targetRevision: main
+        path: rancher-project-authz
+        helm:
+          parameters:
+            - name: target
+              value: workload
+            - name: onlyProject
+              value: '{{.project}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: argocd
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

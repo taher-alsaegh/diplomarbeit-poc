@@ -1,0 +1,44 @@
+# =============================================================================
+# authz-cluster: cluster-wide bindings (CRTB from clusterBindings, GRB from
+# globalBindings). These are NOT per-project, so they live in their own App.
+#
+# Rendered by target=management too, but the per-project Apps use onlyProject
+# to skip cluster bindings? No — cluster bindings render regardless of
+# onlyProject. To avoid duplication, the per-project ApplicationSet and this App
+# must not both apply them. Keep cluster bindings ONLY here by setting the
+# per-project chart values with empty clusterBindings via a values override, OR
+# accept that CRTB/GRB are idempotent (same object, server-side apply = no dup).
+#
+# Simplest: this App renders the full chart at management scope but we rely on
+# server-side apply idempotency. For a strict split, maintain clusterBindings in
+# a values file used only here.
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: authz-cluster
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/taher-alsaegh/diplomarbeit-poc.git
+    targetRevision: main
+    path: rancher-project-authz
+    helm:
+      parameters:
+        - name: target
+          value: management
+        # render no projects here, only cluster/global bindings:
+        - name: onlyProject
+          value: "__none__"      # matches no project -> only CRTB/GRB remain
+  destination:
+    server: https://host.docker.internal/k8s/clusters/local
+    namespace: c-kg5d6
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
