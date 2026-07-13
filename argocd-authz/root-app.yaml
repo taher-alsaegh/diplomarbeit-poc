@@ -7,7 +7,7 @@
 #   2. the Rancher-local (management) cluster registered in ArgoCD
 #      (see cluster-secret-rancher-local.yaml)
 #
-# Replace REPO_URL and TARGET_REVISION before applying.
+# Replace https://github.com/taher-alsaegh/diplomarbeit-poc.git and main before applying.
 # =============================================================================
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -19,8 +19,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: REPO_URL                 # e.g. https://gitlab.com/you/gitops-authz.git
-    targetRevision: TARGET_REVISION   # e.g. main
+    repoURL: https://github.com/taher-alsaegh/diplomarbeit-poc.git                 # e.g. https://gitlab.com/you/gitops-authz.git
+    targetRevision: main   # e.g. main
     path: argocd-authz/apps           # directory containing the child Applications
   destination:
     server: https://kubernetes.default.svc

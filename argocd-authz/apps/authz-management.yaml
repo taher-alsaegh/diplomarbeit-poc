@@ -15,8 +15,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: REPO_URL
-    targetRevision: TARGET_REVISION
+    repoURL: https://github.com/taher-alsaegh/diplomarbeit-poc.git
+    targetRevision: main
     path: rancher-project-authz          # the Helm chart directory in the repo
     helm:
       parameters:
@@ -24,7 +24,7 @@ spec:
           value: management
   destination:
     # must equal the registered management cluster's server URL
-    server: https://host.docker.internal:6443
+    server: https://host.docker.internal/k8s/clusters/local
     namespace: c-kg5d6                    # not really used (cluster-scoped CRDs), but required
   syncPolicy:
     automated:
